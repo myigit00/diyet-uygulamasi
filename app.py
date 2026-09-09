@@ -9,6 +9,7 @@ import json
 def init_db():
     conn = sqlite3.connect("diyet_takip.db")
     c = conn.cursor()
+    
     # Kullanıcı profili tablosu
     c.execute('''
         CREATE TABLE IF NOT EXISTS user_profile (
@@ -21,7 +22,8 @@ def init_db():
             goal TEXT
         )
     ''')
-    # Yemek geçmişi tablosu (meal_type eklendi)
+    
+    # Yemek geçmişi tablosu
     c.execute('''
         CREATE TABLE IF NOT EXISTS food_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,6 +36,13 @@ def init_db():
             fat REAL
         )
     ''')
+    
+    # Eski tablodan geçişte meal_type sütunu yoksa otomatik ekle
+    try:
+        c.execute("ALTER TABLE food_logs ADD COLUMN meal_type TEXT")
+    except sqlite3.OperationalError:
+        pass
+        
     # Su takibi tablosu
     c.execute('''
         CREATE TABLE IF NOT EXISTS water_logs (
@@ -41,6 +50,7 @@ def init_db():
             amount_ml INTEGER
         )
     ''')
+    
     conn.commit()
     conn.close()
 
@@ -312,9 +322,10 @@ with col2:
         for item in today_logs:
             # item: (id, meal_type, food_name, calories, protein, carbs, fat)
             log_id, m_type, name, cal, p, c, f = item
+            m_label = m_type if m_type else "Öğün"
             f_col1, f_col2 = st.columns([4, 1])
             with f_col1:
-                st.write(f"• **[{m_type}] {name}**: {int(cal)} kcal (P:{int(p)}g, K:{int(c)}g, Y:{int(f)}g)")
+                st.write(f"• **[{m_label}] {name}**: {int(cal)} kcal (P:{int(p)}g, K:{int(c)}g, Y:{int(f)}g)")
             with f_col2:
                 if st.button("🗑️ Sil", key=f"del_{log_id}"):
                     delete_food_log(log_id)
